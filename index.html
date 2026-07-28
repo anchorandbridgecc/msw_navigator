@@ -989,6 +989,8 @@ class Component extends DCLogic {
   CARRY_KEY = 'msw-nav-carry-v1';
 
   componentDidMount() {
+    this._esc = (e) => { if (e.key === 'Escape') this.setState({ leaveGateOpen: false, leavePending: null, readmitOpen: false, delayOpen: false, replanOpen: false, importOpen: false }); };
+    window.addEventListener('keydown', this._esc);
     try {
       const raw = localStorage.getItem(this.STORE_KEY);
       if (raw) this.setState({ progress: JSON.parse(raw) });
@@ -1482,7 +1484,8 @@ class Component extends DCLogic {
 
   toggleLeave(program, start, ti) {
     if (this.isLeave(program, start, ti)) { this.setLeave(program, start, ti, false); return; }
-    this.setState({ leaveGateOpen: true, leavePending: { program, start, ti } });
+    // The gate is a decision on its own \u2014 never let it sit under another open dialog.
+    this.setState({ leaveGateOpen: true, leavePending: { program, start, ti }, readmitOpen: false, delayOpen: false, replanOpen: false, importOpen: false });
   }
 
   savePlanPdf() {
@@ -2447,7 +2450,7 @@ class Component extends DCLogic {
       importCarryNote: (this.state.importReport && this.state.importReport.carry) ? (this.state.importReport.carry.phases.map(p => p.phase + ' practicum: ' + p.hoursDone + ' of ' + p.hoursTotal + ' hours and ' + p.crEarned + ' of ' + p.crTotal + ' credits carried over, ' + p.crRemain + ' cr and ' + p.hrsRemain + ' hours still to complete').join(' · ') + '. Read as a record from the ' + this.state.importReport.carry.label + ' program, which splits the practicum differently from this plan — choose the program you are switching into under \u201cYour program\u201d in the left sidebar, then confirm the transferred hours with practicum learning.') : '',
       importAppliedCount: this.state.importReport ? this.state.importReport.applied.length : 0,
       replanOpen: this.state.replanOpen,
-      openReplan: () => this.setState({ replanOpen: true }),
+      openReplan: () => this.setState({ replanOpen: true, leaveGateOpen: false, leavePending: null }),
       closeReplan: () => this.setState({ replanOpen: false }),
       replanSeason: this.state.replanSeason,
       replanYear: this.state.replanYear,
@@ -2482,7 +2485,7 @@ class Component extends DCLogic {
       onDelaySteps: (e) => this.setState({ delaySteps: e.target.value }, () => this.initDelayPlan(active, start)),
       delayResult: this.state.delayPlan ? this.decorateDelay(this.state.delayPlan, this.state.delayMeta || {}) : null,
       readmitOpen: this.state.readmitOpen,
-      openReadmit: () => this.setState({ readmitOpen: true, readmitAck: false, readmitSteps: '0' }, () => this.initReadmitPlan(active, start)),
+      openReadmit: () => this.setState({ readmitOpen: true, leaveGateOpen: false, leavePending: null, readmitAck: false, readmitSteps: '0' }, () => this.initReadmitPlan(active, start)),
       closeReadmit: () => this.setState({ readmitOpen: false }),
       readmitAck: this.state.readmitAck,
       readmitNotAck: !this.state.readmitAck,
